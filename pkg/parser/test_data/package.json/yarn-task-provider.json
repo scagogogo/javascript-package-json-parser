@@ -1,0 +1,60 @@
+{
+  "name": "yarn-task-provider",
+  "displayName": "Yarn Task Provider",
+  "description": "Automatic task detection for yarn package.json files.",
+  "version": "0.2.2",
+  "publisher": "dkneeland",
+  "engines": {
+    "vscode": "^1.26.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:workbench.action.tasks.runTask"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "yarn",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The yarn task to customize"
+          },
+          "args": {
+            "type": "array",
+            "default": [],
+            "description": "Aditional args for the command"
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "tsc -p ./",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "build": "npm run compile && vsce package",
+    "postinstall": "node ./node_modules/vscode/bin/install"
+  },
+  "devDependencies": {
+    "@types/node": "^11.11.3",
+    "tslint": "^5.14.0",
+    "typescript": "^3.3.3333",
+    "vscode": "^1.1.30",
+    "vsce": "^1.58.0"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "repository": "https://github.com/dillonKneeland/vscode-yarn-task-provider",
+  "icon": "assets/yarn-logo-128x.png",
+  "galleryBanner": {
+    "color": "4684a1",
+    "theme": "light"
+  }
+}

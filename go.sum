@@ -1,0 +1,16 @@
+github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/scagogogo/sca-base-module-components v0.0.0-20230824172417-dec7b07d5d11 h1:YqnNIFNU+Q1T8jlb68ELFvd1JFqQ0Q8baSe6BbkG1oY=
+github.com/scagogogo/sca-base-module-components v0.0.0-20230824172417-dec7b07d5d11/go.mod h1:uxc4hd2kLYNbgWQa6eVgqU0KKjsB8DTBljMS5PttipY=
+github.com/scagogogo/sca-base-module-components v0.0.0-20230824173316-3e77326b3331 h1:VhENKATWB9Dp0toHVYeQEud1t8mN9CyJj3giE5a0aSc=
+github.com/scagogogo/sca-base-module-components v0.0.0-20230824173316-3e77326b3331/go.mod h1:uxc4hd2kLYNbgWQa6eVgqU0KKjsB8DTBljMS5PttipY=
+github.com/scagogogo/sca-base-module-ecosystem-parser v0.0.0-20230822164526-7286e221bcfc h1:2lUK7bVInThUrv98IE9fx0qc4bjLtFszCzZ6n17/anU=
+github.com/scagogogo/sca-base-module-ecosystem-parser v0.0.0-20230822164526-7286e221bcfc/go.mod h1:29taCtCeG5WYAIHH+TEPQHyj5WG3xvi6YCfgzL1VPJs=
+github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
+github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

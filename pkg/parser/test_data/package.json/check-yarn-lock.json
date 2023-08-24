@@ -1,0 +1,29 @@
+{
+  "name": "check-yarn-lock",
+  "version": "0.2.1",
+  "description": "A check that any commit that stages package.json dependency changes also changes yarn.lock",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "lint": "eslint . --cache",
+    "precommit": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ganimomer/check-yarn-lock.git"
+  },
+  "bin": "./index.js",
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.1.0",
+    "ramda": "^0.24.1"
+  },
+  "devDependencies": {
+    "eslint": "^4.4.1",
+    "eslint-config-wix-editor": "^0.4.0",
+    "husky": "^0.14.3",
+    "mocha": "^3.5.0"
+  }
+}
