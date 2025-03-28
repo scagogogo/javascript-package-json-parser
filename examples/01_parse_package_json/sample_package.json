@@ -1,0 +1,33 @@
+{
+  "name": "example-app",
+  "version": "1.0.0",
+  "description": "Example application for demonstrating package.json parser",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "react": "^17.0.2",
+    "lodash": "^4.17.21",
+    "axios": "^0.21.1"
+  },
+  "devDependencies": {
+    "jest": "^27.0.6",
+    "typescript": "^4.3.5",
+    "webpack": "^5.47.0",
+    "eslint": "^7.32.0"
+  },
+  "keywords": [
+    "example",
+    "parser",
+    "demo"
+  ],
+  "author": {
+    "name": "Example User",
+    "email": "user@example.com"
+  },
+  "license": "MIT"
+} 

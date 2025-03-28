@@ -1,0 +1,73 @@
+name: Go Test and Examples
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+        
+    - name: Check out code
+      uses: actions/checkout@v4
+      
+    - name: Get dependencies
+      run: go mod download
+      
+    - name: Run unit tests with coverage
+      run: go test ./pkg/... -v -race -coverprofile=coverage.txt -covermode=atomic
+      
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        fail_ci_if_error: false
+      
+    - name: Run benchmark tests
+      run: go test -bench=. ./pkg/...
+      
+    - name: Test example 01 - Parse package.json
+      run: |
+        cd examples/01_parse_package_json
+        go run main.go
+        
+    - name: Test example 02 - Parse package-lock.json
+      run: |
+        cd examples/02_parse_package_lock
+        go run main.go
+        
+    - name: Test example 03 - Parse yarn.lock
+      run: |
+        cd examples/03_parse_yarn_lock
+        go run main.go
+        
+    - name: Test example 04 - Combined parsing
+      run: |
+        cd examples/04_combined_parsing
+        go run main.go
+        
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest 
