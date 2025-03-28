@@ -56,14 +56,14 @@ func (x *PackageLockParser) Parse(ctx context.Context, input *PackageLockJsonPar
 	case 3:
 		// npm v7+，使用packages字段
 		// 如果依赖较多，使用并发版本的解析器
-		if lock.Packages != nil && len(lock.Packages) > 100 {
+		if len(lock.Packages) > 100 {
 			project.SetModule(lock.Name, x.parseModuleV7Concurrent(lock))
 		} else {
 			project.SetModule(lock.Name, x.parseModuleV7(lock))
 		}
 	default:
 		// 未知版本，尝试使用兼容模式解析
-		if lock.Packages != nil && len(lock.Packages) > 0 {
+		if len(lock.Packages) > 0 {
 			if len(lock.Packages) > 100 {
 				project.SetModule(lock.Name, x.parseModuleV7Concurrent(lock))
 			} else {
@@ -91,12 +91,6 @@ func (x *PackageLockParser) parseModuleV7(packageLock *models.PackageLock) *base
 	module := &baseModels.Module[*models.PackageLockModuleEcosystem, *models.PackageLockComponentEcosystem, *models.PackageLockComponentDependencyEcosystem]{}
 	module.Name = packageLock.Name
 	module.Version = packageLock.Version
-
-	// 检查packages是否为nil
-	if packageLock.Packages == nil {
-		module.Dependencies = make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
-		return module
-	}
 
 	// 从packages字段解析依赖
 	dependencies := make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
@@ -145,12 +139,6 @@ func (x *PackageLockParser) parseModuleV7Concurrent(packageLock *models.PackageL
 	module := &baseModels.Module[*models.PackageLockModuleEcosystem, *models.PackageLockComponentEcosystem, *models.PackageLockComponentDependencyEcosystem]{}
 	module.Name = packageLock.Name
 	module.Version = packageLock.Version
-
-	// 检查packages是否为nil
-	if packageLock.Packages == nil {
-		module.Dependencies = make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
-		return module
-	}
 
 	// 先筛选出有效的包路径
 	validPackagePaths := make([]string, 0, len(packageLock.Packages))
@@ -296,11 +284,10 @@ func (x *PackageLockParser) parseAndAddDependency(
 	dependency := x.parseDependency(packageName, packageLockDependency)
 	*dependencies = append(*dependencies, dependency)
 
-	// 递归解析嵌套依赖
-	if packageLockDependency.Dependencies != nil && len(packageLockDependency.Dependencies) > 0 {
-		for nestedName, nestedDep := range packageLockDependency.Dependencies {
-			// 创建一个包含父依赖信息的依赖对象
-			x.parseAndAddDependency(nestedName, nestedDep, dependencies, processed, depth+1)
+	// 添加嵌套依赖
+	if len(packageLockDependency.Dependencies) > 0 {
+		for childName, childDep := range packageLockDependency.Dependencies {
+			x.parseAndAddDependency(childName, childDep, dependencies, processed, depth+1)
 		}
 	}
 }

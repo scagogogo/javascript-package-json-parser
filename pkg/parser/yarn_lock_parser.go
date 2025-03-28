@@ -132,7 +132,7 @@ func (x *YarnLockParser) parseYarnLock(data []byte) (*models.YarnLock, string, e
 		// 寻找依赖声明
 		if matches := depRegex.FindStringSubmatch(lineStr); len(matches) == 3 {
 			// 完成前一个依赖的处理并开始新依赖
-			if currentDep != nil && len(currentDepKeys) > 0 {
+			if len(currentDepKeys) > 0 {
 				for _, key := range currentDepKeys {
 					yarnLock.Dependencies[key] = currentDep
 				}
@@ -225,7 +225,7 @@ func (x *YarnLockParser) parseYarnLock(data []byte) (*models.YarnLock, string, e
 	}
 
 	// 处理最后一个依赖
-	if currentDep != nil && len(currentDepKeys) > 0 {
+	if len(currentDepKeys) > 0 {
 		for _, key := range currentDepKeys {
 			yarnLock.Dependencies[key] = currentDep
 		}

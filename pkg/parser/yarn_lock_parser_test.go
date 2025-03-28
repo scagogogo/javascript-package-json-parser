@@ -2,7 +2,6 @@ package parser
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -171,7 +170,7 @@ react@^16.8.0:
 			defer os.Remove(tmpFile.Name())
 
 			// 写入内容
-			err = ioutil.WriteFile(tmpFile.Name(), []byte(tt.yarnLockContent), 0644)
+			err = os.WriteFile(tmpFile.Name(), []byte(tt.yarnLockContent), 0644)
 			require.NoError(t, err)
 
 			// 解析测试
