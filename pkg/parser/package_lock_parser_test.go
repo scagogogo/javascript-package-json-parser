@@ -2,8 +2,8 @@ package parser
 
 import (
 	"context"
+	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/scagogogo/package-json-parser/pkg/models"
@@ -30,7 +30,7 @@ func TestPackageLockParser_Parse(t *testing.T) {
 			wantError: false,
 			checkFunc: func(t *testing.T, project *baseModels.Project[*models.PackageLockProjectEcosystem, *models.PackageLockModuleEcosystem, *models.PackageLockComponentEcosystem, *models.PackageLockComponentDependencyEcosystem]) {
 				assert.NotNil(t, project)
-				assert.Equal(t, "node-import-paths", project.Name)
+				assert.Equal(t, "join-dev-design", project.Name)
 
 				// 检查模块
 				module := findModuleInPackageLock(project, project.Name)
@@ -360,6 +360,7 @@ func TestPackageLockParser_ParseModuleV7(t *testing.T) {
 
 	require.NotNil(t, babelDep)
 	assert.Equal(t, "7.15.0", babelDep.DependencyVersion)
+	require.NotNil(t, babelDep.ComponentDependencyEcosystem)
 	assert.Equal(t, "https://registry.npmjs.org/@babel/core/-/core-7.15.0.tgz", babelDep.ComponentDependencyEcosystem.Resolved)
 }
 
@@ -374,14 +375,24 @@ func TestPackageLockParser_ParseModuleV7Concurrent(t *testing.T) {
 		Packages: map[string]*models.PackageLockPackage{},
 	}
 
-	// 添加足够多的依赖以触发并发处理
-	for i := 0; i < 150; i++ {
-		packageName := "node_modules/pkg-" + strings.Repeat(string(rune('a'+i%26)), 1+i%3)
+	// 添加正好150个依赖，确保路径不重复
+	packagesAdded := 0
+	for i := 0; packagesAdded < 150; i++ {
+		// 确保生成完全不同的路径字符串
+		packageName := fmt.Sprintf("node_modules/uniquepkg-%d", i)
+
 		packageLock.Packages[packageName] = &models.PackageLockPackage{
-			Version:   "1.0." + string(rune('0'+i%10)),
+			Version:   fmt.Sprintf("1.0.%d", i%10),
 			Resolved:  "https://registry.npmjs.org/example/-/example-1.0.0.tgz",
 			Integrity: "sha512-example",
 		}
+
+		packagesAdded++
+	}
+
+	// 确认我们正好添加了150个包
+	if len(packageLock.Packages) != 150 {
+		t.Fatalf("Expected to add 150 packages but got %d", len(packageLock.Packages))
 	}
 
 	// 执行方法

@@ -3,9 +3,7 @@ package parser
 import (
 	"context"
 	"encoding/json"
-	"runtime"
 	"strings"
-	"sync"
 
 	"github.com/scagogogo/package-json-parser/pkg/models"
 	baseModels "github.com/scagogogo/sca-base-module-components/pkg/models"
@@ -94,30 +92,29 @@ func (x *PackageLockParser) parseModuleV7(packageLock *models.PackageLock) *base
 	module.Name = packageLock.Name
 	module.Version = packageLock.Version
 
+	// 检查packages是否为nil
+	if packageLock.Packages == nil {
+		module.Dependencies = make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
+		return module
+	}
+
 	// 从packages字段解析依赖
 	dependencies := make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
 
 	// 遍历packages
 	for pkgPath, pkg := range packageLock.Packages {
+		// 检查pkg是否为nil
+		if pkg == nil {
+			continue
+		}
+
 		// 排除根包(通常是空字符串或"")
 		if pkgPath == "" || pkgPath == "." {
 			continue
 		}
 
-		// 解析包路径，格式通常为node_modules/package或node_modules/scope/package
-		// 我们只关心包名而不关心嵌套路径
-		parts := strings.Split(pkgPath, "/")
-		var packageName string
-		if len(parts) > 1 {
-			// 处理作用域包 (@scope/package)
-			if len(parts) > 2 && strings.HasPrefix(parts[1], "@") {
-				packageName = parts[1] + "/" + parts[2]
-			} else {
-				packageName = parts[len(parts)-1]
-			}
-		} else {
-			packageName = pkgPath
-		}
+		// 解析包名
+		packageName := extractPackageNameFromPath(pkgPath)
 
 		// 创建依赖对象
 		if pkg.Version != "" {
@@ -125,11 +122,14 @@ func (x *PackageLockParser) parseModuleV7(packageLock *models.PackageLock) *base
 			dependency.DependencyName = packageName
 			dependency.DependencyVersion = pkg.Version
 
-			// 设置生态系统特定字段
+			// 设置生态系统特定字段，确保不为nil
 			ecosystem := &models.PackageLockComponentDependencyEcosystem{}
 			ecosystem.Resolved = pkg.Resolved
 			ecosystem.Integrity = pkg.Integrity
 			ecosystem.Dev = pkg.Dev
+
+			// 显式设置ComponentDependencyEcosystem
+			dependency.ComponentDependencyEcosystem = ecosystem
 
 			// 添加依赖项
 			dependencies = append(dependencies, dependency)
@@ -146,83 +146,55 @@ func (x *PackageLockParser) parseModuleV7Concurrent(packageLock *models.PackageL
 	module.Name = packageLock.Name
 	module.Version = packageLock.Version
 
-	// 预估依赖数量以预分配内存
-	estimatedDeps := len(packageLock.Packages)
-	dependencies := make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0, estimatedDeps)
+	// 检查packages是否为nil
+	if packageLock.Packages == nil {
+		module.Dependencies = make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
+		return module
+	}
 
-	// 用于保护dependencies的并发访问
-	var mu sync.Mutex
-
-	// 并发处理依赖项
-	numWorkers := runtime.NumCPU()
-	wg := sync.WaitGroup{}
-
-	// 将包按协程数量分块
-	packagePaths := make([]string, 0, len(packageLock.Packages))
-	for pkgPath := range packageLock.Packages {
-		// 排除根包
-		if pkgPath == "" || pkgPath == "." {
+	// 先筛选出有效的包路径
+	validPackagePaths := make([]string, 0, len(packageLock.Packages))
+	for pkgPath, pkg := range packageLock.Packages {
+		// 排除空路径、根包和nil包
+		if pkgPath == "" || pkgPath == "." || pkg == nil || pkg.Version == "" {
 			continue
 		}
-		packagePaths = append(packagePaths, pkgPath)
+		validPackagePaths = append(validPackagePaths, pkgPath)
 	}
 
-	// 按协程数分割任务
-	chunkSize := (len(packagePaths) + numWorkers - 1) / numWorkers
-	if chunkSize < 1 {
-		chunkSize = 1
+	// 如果没有有效的包路径，则直接返回
+	if len(validPackagePaths) == 0 {
+		module.Dependencies = make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0)
+		return module
 	}
 
-	// 启动协程处理每个块
-	for i := 0; i < numWorkers && i*chunkSize < len(packagePaths); i++ {
-		wg.Add(1)
+	// 预先分配足够大的空间
+	dependencies := make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0, len(validPackagePaths))
 
-		start := i * chunkSize
-		end := (i + 1) * chunkSize
-		if end > len(packagePaths) {
-			end = len(packagePaths)
-		}
+	// 处理每个有效的依赖
+	for _, pkgPath := range validPackagePaths {
+		pkg := packageLock.Packages[pkgPath]
 
-		go func(pathsChunk []string) {
-			defer wg.Done()
+		// 解析包名
+		packageName := extractPackageNameFromPath(pkgPath)
 
-			// 本地收集依赖项，减少锁竞争
-			localDeps := make([]*baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem], 0, len(pathsChunk))
+		// 创建依赖对象
+		dependency := &baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem]{}
+		dependency.DependencyName = packageName
+		dependency.DependencyVersion = pkg.Version
 
-			for _, pkgPath := range pathsChunk {
-				pkg := packageLock.Packages[pkgPath]
+		// 设置生态系统特定字段
+		ecosystem := &models.PackageLockComponentDependencyEcosystem{}
+		ecosystem.Resolved = pkg.Resolved
+		ecosystem.Integrity = pkg.Integrity
+		ecosystem.Dev = pkg.Dev
 
-				// 创建依赖对象
-				if pkg.Version != "" {
-					// 解析包路径，获取真正的包名
-					packageName := extractPackageNameFromPath(pkgPath)
+		// 显式设置ComponentDependencyEcosystem
+		dependency.ComponentDependencyEcosystem = ecosystem
 
-					dependency := &baseModels.ComponentDependency[*models.PackageLockComponentDependencyEcosystem]{}
-					dependency.DependencyName = packageName
-					dependency.DependencyVersion = pkg.Version
-
-					// 设置生态系统特定字段
-					ecosystem := &models.PackageLockComponentDependencyEcosystem{}
-					ecosystem.Resolved = pkg.Resolved
-					ecosystem.Integrity = pkg.Integrity
-					ecosystem.Dev = pkg.Dev
-
-					// 添加到本地依赖列表
-					localDeps = append(localDeps, dependency)
-				}
-			}
-
-			// 一次性添加本地收集的依赖项到全局列表
-			if len(localDeps) > 0 {
-				mu.Lock()
-				dependencies = append(dependencies, localDeps...)
-				mu.Unlock()
-			}
-		}(packagePaths[start:end])
+		// 添加到依赖列表
+		dependencies = append(dependencies, dependency)
 	}
-
-	// 等待所有协程完成
-	wg.Wait()
 
 	module.Dependencies = dependencies
 	return module
@@ -230,21 +202,51 @@ func (x *PackageLockParser) parseModuleV7Concurrent(packageLock *models.PackageL
 
 // 从包路径中提取包名
 func extractPackageNameFromPath(pkgPath string) string {
-	parts := strings.Split(pkgPath, "/")
-	var packageName string
-
-	if len(parts) > 1 {
-		// 处理作用域包 (@scope/package)
-		if len(parts) > 2 && strings.HasPrefix(parts[1], "@") {
-			packageName = parts[1] + "/" + parts[2]
-		} else {
-			packageName = parts[len(parts)-1]
-		}
-	} else {
-		packageName = pkgPath
+	// 处理空路径
+	if pkgPath == "" {
+		return ""
 	}
 
-	return packageName
+	parts := strings.Split(pkgPath, "/")
+	if len(parts) == 0 {
+		return ""
+	}
+
+	// 查找最后一个 node_modules 的位置
+	lastNodeModulesIndex := -1
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] == "node_modules" {
+			lastNodeModulesIndex = i
+			break
+		}
+	}
+
+	// 如果找到了 node_modules
+	if lastNodeModulesIndex != -1 && lastNodeModulesIndex < len(parts)-1 {
+		// 检查包名是否是作用域包 (@scope/package)
+		nextIndex := lastNodeModulesIndex + 1
+		if nextIndex < len(parts) && strings.HasPrefix(parts[nextIndex], "@") {
+			if nextIndex+1 < len(parts) {
+				return parts[nextIndex] + "/" + parts[nextIndex+1]
+			}
+			return parts[nextIndex]
+		}
+		return parts[nextIndex]
+	}
+
+	// 如果没有找到 node_modules，使用最后一个部分作为包名
+	// 检查是否是作用域包
+	if len(parts) > 0 {
+		if len(parts) > 1 && strings.HasPrefix(parts[0], "@") {
+			if len(parts) > 1 {
+				return parts[0] + "/" + parts[1]
+			}
+			return parts[0]
+		}
+		return parts[len(parts)-1]
+	}
+
+	return pkgPath
 }
 
 // 解析所有的依赖

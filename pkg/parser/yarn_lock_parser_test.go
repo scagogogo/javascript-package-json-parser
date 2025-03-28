@@ -4,7 +4,6 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/scagogogo/package-json-parser/pkg/models"
@@ -247,19 +246,11 @@ func TestYarnLockParser_ExtractPackageName(t *testing.T) {
 		},
 	}
 
-	// 这个测试使用正则表达式来模拟YarnLockParser内部提取包名的逻辑
+	// 使用YarnLockParser的extractPackageName方法进行测试
+	parser := NewYarnLockParser()
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			// 实现类似于YarnLockParser中提取包名的逻辑
-			var pkgName string
-			parts := strings.Split(tt.input, "@")
-			if strings.HasPrefix(tt.input, "@") && len(parts) >= 3 {
-				// 处理作用域包，如 "@babel/core@^7.0.0"
-				pkgName = "@" + parts[1] + "/" + parts[2]
-			} else if len(parts) >= 2 {
-				pkgName = parts[0]
-			}
-
+			pkgName := parser.extractPackageName(tt.input)
 			assert.Equal(t, tt.expected, pkgName)
 		})
 	}
